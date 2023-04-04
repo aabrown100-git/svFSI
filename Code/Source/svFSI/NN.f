@@ -1466,6 +1466,10 @@ c        N(8) = lx*my*0.5_RKIND
       RETURN
       END SUBROUTINE GETNNBNDS
 !####################################################################
+!     AB 3/30/23: Computes the derivatives of shape functions with respect to 
+!     reference or spatial configuration coordinates, given shape function 
+!     derivatives with respect to parametric coordinates and nodes positions in 
+!     reference or spatial configuration
       PURE SUBROUTINE GNN(eNoN, insd, Nxi, x, Nx, Jac, ks)
       USE COMMOD, ONLY: nsd
       USE UTILMOD

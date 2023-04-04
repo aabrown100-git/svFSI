@@ -190,6 +190,12 @@
          ud(2) = ud(2) + N(a)*(rho*(al(j,a)-bfl(2,a)) + dmp*yl(j,a))
          ud(3) = ud(3) + N(a)*(rho*(al(k,a)-bfl(3,a)) + dmp*yl(k,a))
 
+!        Here, Nx is the derivative of shape functions with respect to 
+!        coordinates in the in the reference configuration
+
+!        Compute velocity gradient tensor dv_i/dX_J
+!        Shouldn't this be dv_i/dx_j? Need shape function derivatives with 
+!        respect to coordinates in current (spatial) configuration 
          vx(1,1) = vx(1,1) + Nx(1,a)*yl(i,a)
          vx(1,2) = vx(1,2) + Nx(2,a)*yl(i,a)
          vx(1,3) = vx(1,3) + Nx(3,a)*yl(i,a)
@@ -199,7 +205,7 @@
          vx(3,1) = vx(3,1) + Nx(1,a)*yl(k,a)
          vx(3,2) = vx(3,2) + Nx(2,a)*yl(k,a)
          vx(3,3) = vx(3,3) + Nx(3,a)*yl(k,a)
-
+!        Compute deformation gradient tensor F_iJ = dx_i/dX_J = I + du_i/dX_J
          F(1,1)  = F(1,1)  + Nx(1,a)*dl(i,a)
          F(1,2)  = F(1,2)  + Nx(2,a)*dl(i,a)
          F(1,3)  = F(1,3)  + Nx(3,a)*dl(i,a)
@@ -279,6 +285,8 @@
       END DO
 
       DO a=1, eNoN
+!     AB 3/30/23: These is the derivatives of shape functions in the current
+!     (spatial) configuration. dN_a/dx_i = dN_a/dX_I * dX_I/dx_i
          NxFi(1,a) = Nx(1,a)*Fi(1,1) + Nx(2,a)*Fi(2,1) +
      2      Nx(3,a)*Fi(3,1)
          NxFi(2,a) = Nx(1,a)*Fi(1,2) + Nx(2,a)*Fi(2,2) +
@@ -323,6 +331,12 @@
             NxNx = NxFi(1,a)*NxFi(1,b) + NxFi(2,a)*NxFi(2,b)
      2           + NxFi(3,a)*NxFi(3,b)
 
+!           (i=1,j=1) entry of stiffness matrix due to material stiffness
+!           NxFi is the 
+!           Viscous contribution:
+!           NxNx term corresponds to Na_,k * Na_,k * delta_ij
+!           afu*() term corresponds to (alpha_f * beta * delta^2) term
+!           afv*() term corresponds to (alpha_f * gamma * deltat) term
             BmDBm = Bm(1,1,a)*DBm(1,1) + Bm(2,1,a)*DBm(2,1) +
      2              Bm(3,1,a)*DBm(3,1) + Bm(4,1,a)*DBm(4,1) +
      3              Bm(5,1,a)*DBm(5,1) + Bm(6,1,a)*DBm(6,1)
@@ -330,6 +344,7 @@
      2         + afv*mu*Jac*(r13*NxFi(1,a)*NxFi(1,b) + NxNx)
             lK(1,a,b) = lK(1,a,b) + w*(T1 + T2)
 
+!           (i=1,j=2) entry of stiffness matrix
             BmDBm = Bm(1,1,a)*DBm(1,2) + Bm(2,1,a)*DBm(2,2) +
      2              Bm(3,1,a)*DBm(3,2) + Bm(4,1,a)*DBm(4,2) +
      3              Bm(5,1,a)*DBm(5,2) + Bm(6,1,a)*DBm(6,2)
@@ -338,6 +353,7 @@
      3         - r23*NxFi(1,a)*NxFi(2,b))
             lK(2,a,b) = lK(2,a,b) + w*T2
 
+!           (i=1,j=3) entry of stiffness matrix
             BmDBm = Bm(1,1,a)*DBm(1,3) + Bm(2,1,a)*DBm(2,3) +
      2              Bm(3,1,a)*DBm(3,3) + Bm(4,1,a)*DBm(4,3) +
      3              Bm(5,1,a)*DBm(5,3) + Bm(6,1,a)*DBm(6,3)
@@ -346,6 +362,7 @@
      3         - r23*NxFi(1,a)*NxFi(3,b))
             lK(3,a,b) = lK(3,a,b) + w*T2
 
+!           (i=2,i=1) entry of stiffness matrix
             BmDBm = Bm(1,2,a)*DBm(1,1) + Bm(2,2,a)*DBm(2,1) +
      2              Bm(3,2,a)*DBm(3,1) + Bm(4,2,a)*DBm(4,1) +
      3              Bm(5,2,a)*DBm(5,1) + Bm(6,2,a)*DBm(6,1)
@@ -354,6 +371,7 @@
      3         - r23*NxFi(2,a)*NxFi(1,b))
             lK(dof+1,a,b) = lK(dof+1,a,b) + w*T2
 
+!           (i=2,i=2) entry of stiffness matrix
             BmDBm = Bm(1,2,a)*DBm(1,2) + Bm(2,2,a)*DBm(2,2) +
      2              Bm(3,2,a)*DBm(3,2) + Bm(4,2,a)*DBm(4,2) +
      3              Bm(5,2,a)*DBm(5,2) + Bm(6,2,a)*DBm(6,2)
@@ -361,6 +379,7 @@
      2         + afv*mu*Jac*(r13*NxFi(2,a)*NxFi(2,b) + NxNx)
             lK(dof+2,a,b) = lK(dof+2,a,b) + w*(T1 + T2)
 
+!           (i=2,i=3) entry of stiffness matrix
             BmDBm = Bm(1,2,a)*DBm(1,3) + Bm(2,2,a)*DBm(2,3) +
      2              Bm(3,2,a)*DBm(3,3) + Bm(4,2,a)*DBm(4,3) +
      3              Bm(5,2,a)*DBm(5,3) + Bm(6,2,a)*DBm(6,3)
@@ -369,6 +388,7 @@
      3         - r23*NxFi(2,a)*NxFi(3,b))
             lK(dof+3,a,b) = lK(dof+3,a,b) + w*T2
 
+!           (i=3,i=1) entry of stiffness matrix
             BmDBm = Bm(1,3,a)*DBm(1,1) + Bm(2,3,a)*DBm(2,1) +
      2              Bm(3,3,a)*DBm(3,1) + Bm(4,3,a)*DBm(4,1) +
      3              Bm(5,3,a)*DBm(5,1) + Bm(6,3,a)*DBm(6,1)
@@ -377,6 +397,7 @@
      3         - r23*NxFi(3,a)*NxFi(1,b))
             lK(2*dof+1,a,b) = lK(2*dof+1,a,b) + w*T2
 
+!           (i=3,i=2) entry of stiffness matrix
             BmDBm = Bm(1,3,a)*DBm(1,2) + Bm(2,3,a)*DBm(2,2) +
      2              Bm(3,3,a)*DBm(3,2) + Bm(4,3,a)*DBm(4,2) +
      3              Bm(5,3,a)*DBm(5,2) + Bm(6,3,a)*DBm(6,2)
@@ -385,6 +406,7 @@
      3         - r23*NxFi(3,a)*NxFi(2,b))
             lK(2*dof+2,a,b) = lK(2*dof+2,a,b) + w*T2
 
+!           (i=3,i=3) entry of stiffness matrix
             BmDBm = Bm(1,3,a)*DBm(1,3) + Bm(2,3,a)*DBm(2,3) +
      2              Bm(3,3,a)*DBm(3,3) + Bm(4,3,a)*DBm(4,3) +
      3              Bm(5,3,a)*DBm(5,3) + Bm(6,3,a)*DBm(6,3)
