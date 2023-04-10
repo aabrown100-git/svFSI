@@ -180,6 +180,7 @@
       LOGICAL :: l1, l2, l3, l4, l5
       INTEGER(KIND=IKIND) :: s, e, a, Ac
       REAL(KIND=RKIND) :: coef(4), r1, dUl(nsd)
+      REAL(KIND=RKIND) :: relax
 
       s       = eq(cEq)%s
       e       = eq(cEq)%e
@@ -187,6 +188,9 @@
       coef(2) = eq(cEq)%beta*dt*dt
       coef(3) = 1._RKIND / eq(cEq)%am
       coef(4) = eq(cEq)%af*coef(1)*coef(3)
+
+!     Relaxation parameter for Newton iteration
+      relax = 0.5
 
       IF (sstEq) THEN
 !        ustruct, FSI (ustruct)
@@ -208,9 +212,9 @@
          END IF
       ELSE
          DO a=1, tnNo
-            An(s:e,a) = An(s:e,a) - R(:,a)
-            Yn(s:e,a) = Yn(s:e,a) - R(:,a)*coef(1)
-            Dn(s:e,a) = Dn(s:e,a) - R(:,a)*coef(2)
+            An(s:e,a) = An(s:e,a) - R(:,a)*relax
+            Yn(s:e,a) = Yn(s:e,a) - R(:,a)*coef(1)*relax
+            Dn(s:e,a) = Dn(s:e,a) - R(:,a)*coef(2)*relax
          END DO
       END IF
 
