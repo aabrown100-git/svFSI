@@ -195,8 +195,6 @@
 !        coordinates in the in the reference configuration
 
 !        Compute velocity gradient tensor dv_i/dX_J
-!        Shouldn't this be dv_i/dx_j? Need shape function derivatives with 
-!        respect to coordinates in current (spatial) configuration 
          vx(1,1) = vx(1,1) + Nx(1,a)*yl(i,a)
          vx(1,2) = vx(1,2) + Nx(2,a)*yl(i,a)
          vx(1,3) = vx(1,3) + Nx(3,a)*yl(i,a)
@@ -206,7 +204,7 @@
          vx(3,1) = vx(3,1) + Nx(1,a)*yl(k,a)
          vx(3,2) = vx(3,2) + Nx(2,a)*yl(k,a)
          vx(3,3) = vx(3,3) + Nx(3,a)*yl(k,a)
-!        Compute deformation gradient tensor F_iJ = dx_i/dX_J = I + du_i/dX_J
+!        Compute deformation gradient tensor F_jJ = dx_j/dX_J = I + du_j/dX_J
          F(1,1)  = F(1,1)  + Nx(1,a)*dl(i,a)
          F(1,2)  = F(1,2)  + Nx(2,a)*dl(i,a)
          F(1,3)  = F(1,3)  + Nx(3,a)*dl(i,a)
