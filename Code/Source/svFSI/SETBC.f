@@ -314,6 +314,20 @@
          CALL BASSEMNEUBC(lFa, hg, Yg)
       END IF
 
+!     Now update surface integrals involved in coupled/resistance BC
+!     contribution to stiffness matrix to reflect deformed geometry.
+!     The value of this integral is stored in lhs%face%val.
+!     Since we are using the deformed geometry to compute the
+!     contribution of the pressure load to the residual vector
+!     (i.e. follower pressure or moving mesh for FSI), we must also use the deformed geometry
+!     to compute the contribution of the resistance BC to the tangent
+!     matrix
+      IF (BTEST(lBc%bType, bType_res)) THEN
+         IF (lBc%flwP .OR. mvMsh) THEN
+            CALL FSILS_UPD(lBc, lFa)
+         END IF
+      END IF
+
 !     Now treat Robin BC (stiffness and damping) here
       IF (BTEST(lBc%bType,bType_Robin))
      2   CALL SETBCRBNL(lFa, lBc%k, lBc%c, lBc%rbnN, Yg, Dg)
