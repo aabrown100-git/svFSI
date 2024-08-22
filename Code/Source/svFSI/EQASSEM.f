@@ -123,7 +123,7 @@
          IF (lFa%eType .EQ. eType_NRB) CALL NRBNNXB(msh(iM), lFa, e)
 
          DO g=1, lFa%nG
-            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV)
+            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV, 'r')
             Jac = SQRT(NORM(nV))
             nV  = nV/Jac
             w   = lFa%w(g)*Jac
@@ -259,7 +259,7 @@
             IF (g.EQ.1 .OR. .NOT.msh(iM)%lShpF)
      2         CALL GNN(eNoN, nsd, Nxi, xl, Nx, Jac, ksix)
 
-            CALL GNNB(lFa, e, g, nsd-1, eNoNb, lFa%Nx(:,:,g), nV)
+            CALL GNNB(lFa, e, g, nsd-1, eNoNb, lFa%Nx(:,:,g), nV, 'r')
             Jac = SQRT(NORM(nV))
             nV  = nV / Jac
             w   = lFa%w(g)*Jac
@@ -300,18 +300,6 @@
 #endif
          DEALLOCATE(ptr, hl, xl, dl, N, Nxi, Nx, lR, lK)
       END DO
-
-!     Now update surface integrals involved in coupled/resistance BC
-!     contribution to stiffness matrix to reflect deformed geometry.
-!     The value of this integral is stored in lhs%face%val.
-!     Since we are using the deformed geometry to compute the
-!     contribution of the pressure load to the residual vector
-!     (i.e. follower pressure), we must also use the deformed geometry
-!     to compute the contribution of the resistance BC to the tangent
-!     matrix
-      IF (BTEST(lBc%bType, bType_res)) THEN
-         CALL FSILS_UPD(lBc, lFa)
-      END IF
 
       RETURN
       END SUBROUTINE BNEUFOLWP

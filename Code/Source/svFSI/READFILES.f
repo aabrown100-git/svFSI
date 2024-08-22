@@ -370,7 +370,7 @@
       TYPE(listType), INTENT(INOUT) :: list
       CHARACTER(LEN=stdL), INTENT(IN) :: eqName
 
-      INTEGER(KIND=IKIND), PARAMETER :: maxOutput = 24
+      INTEGER(KIND=IKIND), PARAMETER :: maxOutput = 26
 
       LOGICAL THflag
       INTEGER(KIND=IKIND) fid, iBc, iBf, iM, iFa, phys(4),
@@ -565,7 +565,7 @@
             outPuts(3)  = out_cauchy
             outPuts(4)  = out_strain
          ELSE
-            nDOP = (/15,2,0,0/)
+            nDOP = (/16,2,0,0/)
             outPuts(1)  = out_displacement
             outPuts(2)  = out_mises
             outPuts(3)  = out_stress
@@ -578,9 +578,10 @@
             outPuts(10) = out_fibAlign
             outPuts(11) = out_velocity
             outPuts(12) = out_acceleration
-            outPuts(13) = out_fibStrn
+            outPuts(13) = out_fibStrtch
             outPuts(14) = out_CGstrain
             outPuts(15) = out_CGInv1
+            outPuts(16) = out_active
          END IF
 
          CALL READLS(lSolver_CG, lEq, list)
@@ -604,7 +605,7 @@
          lPtr => list%get(pstEq, "Prestress")
          IF (pstEq) err = "Prestress for USTRUCT is not implemented yet"
 
-         nDOP = (/17,2,0,0/)
+         nDOP = (/18,2,0,0/)
          outPuts(1)  = out_displacement
          outPuts(2)  = out_mises
          outPuts(3)  = out_stress
@@ -619,9 +620,10 @@
          outPuts(12) = out_pressure
          outPuts(13) = out_acceleration
          outPuts(14) = out_divergence
-         outPuts(15) = out_fibStrn
+         outPuts(15) = out_fibStrtch
          outPuts(16) = out_CGstrain
          outPuts(17) = out_CGInv1
+         outPuts(18) = out_active
 
          CALL READLS(lSolver_GMRES, lEq, list)
 
@@ -801,7 +803,7 @@
 
          CALL READDOMAIN(lEq, propL, list, phys)
 
-         nDOP = (/24,4,2,0/)
+         nDOP = (/26,4,2,0/)
          outPuts(1)  = out_velocity
          outPuts(2)  = out_pressure
          outPuts(3)  = out_displacement
@@ -826,9 +828,11 @@
          outPuts(20) = out_fibAlign
          outPuts(21) = out_CGstrain
          outPuts(22) = out_CGInv1
+         outPuts(23) = out_fibStrtch
+         outPuts(24) = out_active
 
-         outPuts(23) = out_divergence
-         outPuts(24) = out_acceleration
+         outPuts(25) = out_divergence
+         outPuts(26) = out_acceleration
 
          CALL READLS(lSolver_GMRES, lEq, list)
 
@@ -1483,12 +1487,12 @@
             lEq%output(iOut)%grp  = outGrp_C
             lEq%output(iOut)%o    = 0
             lEq%output(iOut)%l    = nsymd
-            lEq%output(iOut)%name = "CG_Strain"
+            lEq%output(iOut)%name = "Cauchy_strain"
          CASE (out_CGInv1)
             lEq%output(iOut)%grp  = outGrp_I1
             lEq%output(iOut)%o    = 0
             lEq%output(iOut)%l    = 1
-            lEq%output(iOut)%name = "CG_Strain_Trace"
+            lEq%output(iOut)%name = "Cauchy_strain_trace"
          CASE (out_divergence)
             lEq%output(iOut)%grp  = outGrp_divV
             lEq%output(iOut)%o    = 0
@@ -1499,11 +1503,16 @@
             lEq%output(iOut)%o    = 0
             lEq%output(iOut)%l    = 1
             lEq%output(iOut)%name = "Viscosity"
-         CASE (out_fibStrn)
-            lEq%output(iOut)%grp  = outGrp_fS
+         CASE (out_fibStrtch)
+            lEq%output(iOut)%grp  = outGrp_I4f
             lEq%output(iOut)%o    = 0
             lEq%output(iOut)%l    = 1
-            lEq%output(iOut)%name = "Fiber_shortening"
+            lEq%output(iOut)%name = "Fiber_stretch"
+         CASE (out_active)
+            lEq%output(iOut)%grp  = outGrp_Ya
+            lEq%output(iOut)%o    = 0
+            lEq%output(iOut)%l    = 1
+            lEq%output(iOut)%name = "Active"
          CASE DEFAULT
             err = "Internal output undefined"
          END SELECT
@@ -3397,7 +3406,7 @@ c     2         "can be applied for Neumann boundaries only"
 !#######################################################################
 !     Adds a bc to lEq%bc(:) at the end for a cap. Copies most of the bc
 !     info from lEq%bc(iBc), which corresponds to the capped surface.
-!     Also, sets info about caping face in capped face (capName
+!     Also, sets info about capping face in capped face (capName
 !     and capID fields)
       SUBROUTINE ADDCAPBC(lEq, iBc)
       USE COMMOD
@@ -3411,13 +3420,13 @@ c     2         "can be applied for Neumann boundaries only"
 
 !     We are adding a new BC for the cap, so we need to update the
 !     the relevant structures
-
 !     Store old BCs in oldBcs
       ALLOCATE(oldBcs(lEq%nBc))
       DO jBc=1, lEq%nBc
          CALL COPYBC(lEq%bc(jBc), oldBcs(jBc))
          CALL DESTROY(lEq%bc(jBc))
       END DO
+
 !     Increment number of BCs
       lEq%nBc = lEq%nBc + 1
 
@@ -3460,7 +3469,7 @@ c     2         "can be applied for Neumann boundaries only"
       TYPE(bcType), INTENT(IN) :: oBc
       TYPE(bcType), INTENT(OUT) :: nBc
 
-      INTEGER(KIND=IKIND) jBc, iFa, iM
+      INTEGER(KIND=IKIND) iFa, iM
 
 !     Copy bool, integers, and real values
       nBc%weakDir  = oBc%weakDir

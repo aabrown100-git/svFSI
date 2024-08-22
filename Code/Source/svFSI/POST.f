@@ -60,7 +60,7 @@
             END DO
 
          ELSE IF ((outGrp .EQ. outGrp_J)  .OR.
-     2            (outGrp .EQ. outGrp_fS) .OR.
+     2            (outGrp .EQ. outGrp_Ya) .OR.
      3            (outGrp .EQ. outGrp_mises) ) THEN
             IF (ALLOCATED(tmpV)) DEALLOCATE(tmpV)
             ALLOCATE(tmpV(1,msh(iM)%nNo), tmpVe(msh(iM)%nEl))
@@ -518,7 +518,7 @@
       REAL(KIND=RKIND) w, Jac, detF, Je, tmX, ya, Ja, elM, nu, lambda,
      2   mu, p, trS, vmises, xi(nsd), xi0(nsd), xp(nsd), ed(nsymd),
      3   Im(nsd,nsd), F(nsd,nsd), C(nsd,nsd), Eg(nsd,nsd), P1(nsd,nsd),
-     4   S(nsd,nsd), sigma(nsd,nsd), Dm(nsymd,nsymd), I1
+     4   S(nsd,nsd), sigma(nsd,nsd), Dm(nsymd,nsymd)
       TYPE(fsType) :: fs
 
       INTEGER, ALLOCATABLE :: eNds(:)
@@ -727,7 +727,7 @@
                   END IF
                ELSE IF (outGrp .EQ. outGrp_I1) THEN
                   C  = MATMUL(TRANSPOSE(F), F)
-                  I1 = MAT_TRACE(C,nsd)
+                  resl(1) = MAT_TRACE(C,nsd)
                END IF
 
             CASE (outGrp_stress, outGrp_cauchy, outGrp_mises)
@@ -753,6 +753,7 @@
                      sigma(1,2) = mu*ed(3)
                      sigma(2,1) = sigma(1,2)
                   END IF
+                  S(:,:) = sigma(:,:)
 
                ELSE IF (cPhys .EQ. phys_ustruct) THEN
                   p = 0._RKIND
@@ -821,7 +822,7 @@
                   sE(e)   = sE(e) + w*vmises
                END IF
 
-            CASE (outGrp_fS)
+            CASE (outGrp_Ya)
 !           Fiber shortening (active strain model)
                resl(1) = ya
 
@@ -1479,7 +1480,7 @@
       INTEGER(KIND=IKIND), INTENT(IN) :: iEq
       TYPE(mshType), INTENT(IN) :: lM
       REAL(KIND=RKIND), INTENT(IN) :: lD(tDof,tnNo)
-      REAL(KIND=RKIND), INTENT(INOUT) :: res(lM%nNo)
+      REAL(KIND=RKIND), INTENT(INOUT) :: res(1,lM%nNo)
 
       INTEGER(KIND=IKIND) a, e, g, Ac, eNoN, i, j, k, cPhys
       REAL(KIND=RKIND) w, Jac, I4f, fl(nsd), F(nsd,nsd)
@@ -1501,6 +1502,9 @@
       DO e=1, lM%nEl
          cDmn  = DOMAIN(lM, iEq, e)
          cPhys = eq(iEq)%dmn(cDmn)%phys
+         IF ((cPhys .NE. phys_struct) .AND.
+     2       (cPhys .NE. phys_ustruct)) CYCLE
+
          IF (lM%eType .EQ. eType_NRB) CALL NRBNNX(lM, e)
 
          DO a=1, eNoN
@@ -1556,7 +1560,7 @@
       DO a=1, lM%nNo
          Ac = lM%gN(a)
          IF (.NOT.ISZERO(sA(Ac))) THEN
-            res(a) = res(a) + sF(Ac)/sA(Ac)
+            res(1,a) = res(1,a) + sF(Ac)/sA(Ac)
          ENDIF
       END DO
 

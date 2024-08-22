@@ -314,6 +314,20 @@
          CALL BASSEMNEUBC(lFa, hg, Yg)
       END IF
 
+!     Now update surface integrals involved in coupled/resistance BC
+!     contribution to stiffness matrix to reflect deformed geometry.
+!     The value of this integral is stored in lhs%face%val.
+!     Since we are using the deformed geometry to compute the
+!     contribution of the pressure load to the residual vector
+!     (i.e. follower pressure or moving mesh for FSI), we must also use the deformed geometry
+!     to compute the contribution of the resistance BC to the tangent
+!     matrix
+      IF (BTEST(lBc%bType, bType_res)) THEN
+         IF (lBc%flwP .OR. mvMsh) THEN
+            CALL FSILS_UPD(lBc, lFa)
+         END IF
+      END IF
+
 !     Now treat Robin BC (stiffness and damping) here
       IF (BTEST(lBc%bType,bType_Robin))
      2   CALL SETBCRBNL(lFa, lBc%k, lBc%c, lBc%rbnN, Yg, Dg)
@@ -390,7 +404,7 @@
          lK = 0._RKIND
          lR = 0._RKIND
          DO g=1, lFa%nG
-            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV)
+            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV, 'r')
             Jac = SQRT(NORM(nV))
             w   = lFa%w(g)*Jac
             N   = lFa%N(:,g)
@@ -467,7 +481,7 @@
          lR  = 0._RKIND
          lKd = 0._RKIND
          DO g=1, lFa%nG
-            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV)
+            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV, 'r')
             Jac = SQRT(NORM(nV))
             nV  = nV/Jac
             w   = lFa%w(g) * Jac
@@ -925,7 +939,7 @@
 
 !        Gauss integration 1
          DO g=1, lFa%nG
-            CALL GNNB(lFa, e, g, nsd-1, eNoNb, lFa%Nx(:,:,g), nV)
+            CALL GNNB(lFa, e, g, nsd-1, eNoNb, lFa%Nx(:,:,g), nV, 'r')
             Jac = SQRT(NORM(nV))
             nV  = nV/Jac
             w   = lFa%w(g) * Jac
@@ -1106,9 +1120,9 @@
                iFaCap = msh(iM)%fa(iFa)%capID
                IF (iFaCap .NE. 0) THEN ! If face is capped
                   cplBC%fa(ptr)%Qo = cplBC%fa(ptr)%Qo +
-     2                  Integ(msh(iM)%fa(iFaCap), Yo, 1, nsd, cfgin='o')
+     2               Integ(msh(iM)%fa(iFaCap), Yo, 1, nsd, cfgin='o')
                   cplBC%fa(ptr)%Qn = cplBC%fa(ptr)%Qn +
-     2                  Integ(msh(iM)%fa(iFaCap), Yn, 1, nsd, cfgin='n')
+     2               Integ(msh(iM)%fa(iFaCap), Yn, 1, nsd, cfgin='n')
                END IF
 
                cplBC%fa(ptr)%Po = 0._RKIND
